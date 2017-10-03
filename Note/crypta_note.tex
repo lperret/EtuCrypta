@@ -1,0 +1,227 @@
+\documentclass{llncs}[11pt]
+%\usepackage{hyperref}
+
+\newcommand{\tr}[1]{\hbox{}^{T}\negmedspace{#1}}
+
+\input{utf-8-macros}
+
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{booktabs}
+\usepackage[linesnumbered,vlined]{algorithm2e}
+
+\usepackage{graphics}
+\usepackage{tikz}
+\usepackage{pgfplots}
+%\pgfplotsset{compat=1.11}
+
+\usepackage[english]{babel}
+\usepackage{todonotes}
+
+\newtheorem{exmp}{Example}
+\newtheorem{assumption}{Assumption}
+\newtheorem{result}{Result}
+
+\usepackage{a4wide}
+\setlength\parindent{0pt}
+
+\usepackage{cite}
+\usepackage{url}
+\usepackage{times}
+\input{macro}
+\usepackage{graphics}
+
+\usepackage[index,multiuser]{fixme} 
+\fxsetup{
+   status=draft,
+   layout=marginnote, % also try footnote or pdfnote
+   theme=color
+}
+\FXRegisterAuthor{malb}{amalb}{Martin}
+\FXRegisterAuthor{lp}{lpe}{LP}
+\FXRegisterAuthor{rf}{arf}{Rob}
+
+\parindent 0pt
+\parskip 3pt plus 1pt minus 1pt
+\usepackage{boxedminipage}
+
+
+
+\begin{document}
+
+\pagestyle{headings}{\mainmatter}
+
+
+\title{CRTYPA}
+
+\author{Ludovic Perret}
+\institute{ 
+Sorbonne Universit\'es, UPMC Univ Paris 06, INRIA Paris \\ 
+LIP6, {\tt PolSyS} Project, Paris, France 
+}
+
+
+%\author{Martin R.~Albrecht \inst{1} \and Carlos Cid \inst{1} \and Jean-Charles Faug\`ere \inst{2} \and Ludovic Perret \inst{2}}
+%\institute{
+%Information Security Group\\
+%Royal Holloway, University of London\\
+%Egham, Surrey TW20 0EX, United Kingdom \and
+%INRIA, Paris-Rocquencourt Center, POLSYS Project\\
+%UPMC Univ Paris 06, UMR 7606, LIP6, F-75005, Paris, France\\
+%CNRS, UMR 7606, LIP6, F-75005, Paris, France\\
+%\email{martin.albrecht@rhul.ac.uk, carlos.cid@rhul.ac.uk, jean-charles.faugere@inria.fr, ludovic.perret@lip6.fr}  
+%}
+
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{Rappels}
+
+\subsection{Chiffrement  à clé secrète}
+On rappelle ici quelques outils permettant de garantir la {\bf confidentialité} d'une donnée. 
+\subsection{Chiffrement  par flot}
+\begin{definition}
+Un {\bf chiffrement par flot} est un chiffrement à clef secrète. Il est constitué d'un premier algorithme ${\rm SC} : \F_2^t \to  \{0,1\}^n$ qui prend en entrée une clé secrète $K \in \F_2^k$.  La fonction ${\rm SC}_K$ permet de générer une {\bf  suite chiffrante} à partir de la clef secrète $K$.  
+On chiffre alors une message $m \in \{0,1\}^n$ par:   
+$$
+c={\rm SC}(K)  \oplus m.      
+$$ 
+Pour déchiffrer, on calcule: 
+$$
+m={\rm SC}(K)  \oplus c.      
+$$ 
+\end{definition}
+
+\begin{example}
+${\tt RC}4$  est un exemple célèbre de chiffrement par flot. {\bf Il ne faut surtout pas utiliser ${\tt RC}4$ en pratique.} 
+
+\end{example}
+\subsection{Chiffrement  par bloc}
+
+
+\begin{definition}
+Un {\bf chiffrement par bloc} est un chiffrement à clef secrète. C'est 
+une fonction $E_K : \F_2^n \to  \F_2^n$, paramétrée par une clef secrète $K \in \F_2^k$, qui opère sur un bloc de taille fixe. On associe à $E_K$ 
+une fonction de déchiffrement  $D_K : \F_2^n \to  \F_2^n$ telle que:
+$$
+D_K\big( E_K(m) \big)=m, \quad \forall m \in \F_2^n. 
+$$    
+Ainsi, pour chiffrer un message $m \in \F_2^n$, on calcule:
+$$
+c=E_K(m) \in \F_2^n. 
+$$ 
+Pour déchiffrer  $c \in \F_2^n$, on fait:
+$$
+m=D_K(m) \in \F_2^n. 
+$$
+\end{definition}
+\begin{example}
+En chiffrement par bloc, le standard est {\tt AES}128 dans lequel 
+$n=128$ (taille du bloc) et $t=128$ (taille de la clé secrète).   
+\end{example}
+
+\begin{definition}
+Un {\bf mode opératoire} pour un chiffrement par bloc est une algorithme dont l'objectif est de chiffrer un message de taille quelconque $m \in \{0,1\}^*$   
+avec un chiffrement par bloc  $E_K : \F_2^n \to  \F_2^n$. Le principe est de découper le message en des blocs de taille $n$ et d'utiliser $E_K$ sur chaque bloc.     
+\end{definition}
+\begin{example}
+Soit $m=(m_1,\ldots,m_t) \in  (\F_2^n)^t$. 
+\begin{itemize}
+\item Un mode opératoire simple est le mode {\tt ECB} qui consiste à chiffrer chaque bloc du message $m$ indépendamment. C'est à dire, on calcule:
+$$
+c_i=E_K(m_i), \forall i, 1 \leq i \leq t. 
+$$      
+On déchiffre par:
+$$
+m_i=D_K(c_i), \forall i, 1 \leq i \leq t. 
+$$      
+{\bf Il ne faut surtout pas utiliser {\tt ECB} en pratique.}
+\item Le  mode {\tt CBC} fonctionne de la manière suivante. Nous avons un vecteur public d'initialisation $c_0={\rm IV} \in \F_2^n$. On chiffre comme:
+$$
+c_i=E_K(m_i \oplus c_{i-1}), \forall i, 1 \leq i \leq t. 
+$$  
+Pour le déchiffrement, nous avons:
+$$
+m_i=D_K(c_i) \oplus c_{i-1}, \forall i, 1 \leq i \leq t. 
+$$  
+ \item Le  mode {\tt CTR} fonctionne de la manière suivante. Nous avons un vecteur public d'initialisation ${\rm IV} \in \F_2^n$. On chiffre comme:
+$$
+c_i=m_i \oplus E_K( {\rm IV}  \oplus i), \forall i, 1 \leq i \leq t. 
+$$  
+%Pour le déchiffrement, nous avons:
+%$$
+%m_i=D_K(c_i) \oplus c_{i-1}, \forall i, 1 \leq i \leq t. 
+%$$  
+ 
+\end{itemize}
+
+\end{example}
+\subsection{Hachage}
+\begin{definition}
+Une {\bf fonction de hachage} est une fonction qui prend comme entrée une donnée de taille quelconque et retourne une {\bf emprunte} de taille fixe.
+Autrement dit, une fonction de hachage est une fonction de la forme  
+$H : \{0,1\}^* \to  \F_2^n$.
+Une {\bf fonction de hachage cryptographique} est une fonction de hachage
+$H : \{0,1\}^* \to  \F_2^n$ telle que:
+\begin{itemize}
+\item $H$ est facilement évaluable, i.e. $\forall D \in  \{0,1\}^*$, $ H(D)$ est calculable en temps polynomial.
+\item $H$ est {\bf résistante à la pré-image}, i.e. $\forall h \in \F_2^n$, il est difficile  de trouver $D \in  \{0,1\}^*$ tel que  $ H(D)=h$.  
+\item $H$ est {\bf résistante à la seconde  pré-image}, i.e. $\forall D \in \{0,1\}^*$ fixé, il est difficile de trouver $D' \in  \{0,1\}^*$ tels que 
+$$
+H(D)=H(D') \mbox{ et }  D \not =D'.
+$$  
+\item $H$ est {\bf résistante à la collision}, i.e. il est difficile de trouver un 
+couple $(D,D') \in \{0,1\}^*$ tels que 
+$$
+H(D)=H(D') \mbox{ et }  D \not =D'.
+$$  
+\end{itemize}
+
+\end{definition}
+
+\begin{remark}
+Soit  $H : \{0,1\}^* \to  \F_2^n$ une fonction de hachage. Le {\bf paradoxe des anniversaires} permet de trouver une collision en $O(2^{n/2})$ évaluations de $H$ avec une forte probabilité.     
+\end{remark}
+
+\begin{remark}
+\begin{itemize}
+\item ${\tt MD}5$ fonction de hachage dans laquelle $n=128$. {\bf Il ne faut surtout pas utiliser ${\tt MD}5$ en pratique.} On trouve, par exemple, des collisions dans ${\tt MD}5$ (quasiment) en temps réel.  
+\item ${\tt SHA}1$ fonction de hachage dans laquelle $n=160$. {\bf Il ne faut surtout pas utiliser ${\tt SHA}1$ en pratique.} Google, en collaboration avec de nombreux chercheurs, a annoncé le calcul d'une collision pour ${\tt SHA}1$. Cette collisions a nécessité de l'ordre de $2^{63.1}$ évaluations de ${\tt SHA}1$.
+\item On peut utiliser  les fonctions de hachage la famille ${\tt SHA}2$ (${\tt SHA}256,{\tt SHA}384$, ou ${\tt SHA}512$)
+\item Le nouveau standard est  ${\tt SHA}3$.
+\end{itemize}
+\end{remark}
+
+\subsection{Authentification à clé secrète}
+
+
+\begin{definition}
+Un {\bf Message Authentication Code (MAC)} est une fonction  ${\rm MAC}_K : \{0,1\}^* \to  \F_2^n$ qui est paramétrée par une clef secrète $K \in \F_2^k$.
+Elle prend en entrée une donnée de taille quelconque et retourne un authentifiant de taille fixe. Dans ce modèle, l'émetteur et le destinataire  partagent une clef secrète $K \in \F_2^t$. Ainsi, on associe à une donnée $D \in  \{0,1\}^*$ un authentifiant  $T=\F_2^n$. L'authentifiant $T$ est ainsi envoyé avec la donnée $D$.         
+
+\end{definition}
+
+%\newpage
+
+%\section{Justifications of our Assumptions}\label{sec:assumptions}
+%\input{assumptions}
+
+
+\bibliographystyle{plain}
+\bibliography{abbrev3,crypto_crossref,local,jacm,issac}
+
+\appendix
+
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
